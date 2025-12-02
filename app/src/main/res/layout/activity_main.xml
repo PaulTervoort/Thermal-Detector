@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+This file is part of Thermal Detector.
+
+Thermal Detector is free software: you can redistribute it and/or modify it under the terms of
+the GNU General Public License as published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+Thermal Detector is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See
+the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with Thermal Detector.
+If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:keepScreenOn="true"
+    tools:context=".MainActivity">
+
+    <ImageView
+        android:id="@+id/cameraView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        android:contentDescription="@string/camera_feed_text"
+        app:layout_constraintBottom_toTopOf="@+id/seekBarMin"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewStatus"
+        app:srcCompat="@drawable/camera_placeholder" />
+
+    <ImageButton
+        android:id="@+id/buttonEnableCamera"
+        style="@android:style/Widget.DeviceDefault.ImageButton"
+        android:layout_width="80sp"
+        android:layout_height="80sp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/button_round"
+        android:backgroundTint="@color/image_button_tint"
+        android:backgroundTintMode="multiply"
+        android:contentDescription="@string/enable_camera_text"
+        android:onClick="startStop_click"
+        android:padding="5sp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/camera_enable_icon"
+        android:tintMode="multiply"
+        app:tint="@color/image_button_tint"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toStartOf="@+id/buttonCalibrate"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageButton
+        android:id="@+id/buttonCalibrate"
+        style="@android:style/Widget.DeviceDefault.ImageButton"
+        android:layout_width="80sp"
+        android:layout_height="80sp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/button_round"
+        android:backgroundTint="@color/image_button_tint"
+        android:backgroundTintMode="multiply"
+        android:contentDescription="@string/calibrate_text"
+        android:onClick="calibrate_click"
+        android:padding="5sp"
+        android:scaleType="fitCenter"
+        android:src="@mipmap/calibrate_icon"
+        android:tintMode="multiply"
+        app:tint="@color/image_button_tint"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/buttonEnableCamera" />
+
+    <nl.paultervoort.thermaldetector.SeekBarMod
+        android:id="@+id/seekBarMax"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="16dp"
+        android:paddingTop="8dip"
+        android:paddingBottom="8dip"
+        android:progressTint="@color/progress_warm"
+        android:thumbTint="@color/progress_warm"
+        app:layout_constraintBottom_toTopOf="@+id/buttonCalibrate"
+        app:layout_constraintEnd_toStartOf="@+id/textViewMax"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <nl.paultervoort.thermaldetector.SeekBarMod
+        android:id="@+id/seekBarMin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="16dp"
+        android:paddingTop="8dip"
+        android:paddingBottom="8dip"
+        android:progressTint="@color/progress_cold"
+        android:thumbTint="@color/progress_cold"
+        app:layout_constraintBottom_toTopOf="@+id/seekBarMax"
+        app:layout_constraintEnd_toStartOf="@+id/textViewMin"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/textViewMin"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center"
+        android:maxEms="2"
+        android:minEms="2"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBarMin"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/seekBarMin" />
+
+    <TextView
+        android:id="@+id/textViewMax"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center"
+        android:maxEms="2"
+        android:minEms="2"
+        app:layout_constraintBottom_toBottomOf="@+id/seekBarMax"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/seekBarMax" />
+
+    <TextView
+        android:id="@+id/textViewStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="sans-serif-black"
+        tools:text="STATUS"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

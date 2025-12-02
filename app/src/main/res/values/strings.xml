@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Thermal Detector</string>
+    <string name="title_activity_main" translatable="false">@string/app_name</string>
+    <string name="empty" translatable="false"> </string>
+    <string name="camera_feed_text">Camera Feed</string>
+    <string name="calibrate_text">Calibrate</string>
+    <string name="state_no_permission">No Camera Permission</string>
+    <string name="state_compromised">Camera Compromised</string>
+    <string name="state_idle">Idle</string>
+    <string name="state_discovering">Discovering</string>
+    <string name="state_device_found">Camera Found</string>
+    <string name="state_connecting">Connecting</string>
+    <string name="state_connected">Connected</string>
+    <string name="state_stand_by">Stand By</string>
+    <string name="state_starting_stream">Starting Stream</string>
+    <string name="state_streaming">Streaming</string>
+    <string name="state_need_calibrate">Needs Calibrating</string>
+    <string name="state_calibrating">Calibrating</string>
+    <string name="state_clobbered">Clobbered</string>
+    <string name="enable_camera_text">Enable or Disable Camera</string>
+    <string name="state_unknown">Unknown State</string>
+</resources>

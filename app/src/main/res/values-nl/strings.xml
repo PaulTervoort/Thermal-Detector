@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Warmte Zoeker</string>
+    <string name="camera_feed_text">Camera beeld</string>
+    <string name="calibrate_text">Kalibreer</string>
+    <string name="state_no_permission">Geen Camera Toegang</string>
+    <string name="state_compromised">Invalide Camera Staat</string>
+    <string name="state_idle">Rustend</string>
+    <string name="state_discovering">Camera Zoeken</string>
+    <string name="state_device_found">Camera Gevonden</string>
+    <string name="state_connecting">Verbinden</string>
+    <string name="state_connected">Verbonden</string>
+    <string name="state_stand_by">Stand-By</string>
+    <string name="state_starting_stream">Stream Starten</string>
+    <string name="state_streaming">Streamen</string>
+    <string name="state_need_calibrate">Kalibratie Nodig</string>
+    <string name="state_calibrating">Kalibreren</string>
+    <string name="state_clobbered">Verpest</string>
+    <string name="enable_camera_text">Zet camera aan of uit</string>
+    <string name="state_unknown">Onbekende Staat</string>
+</resources>
