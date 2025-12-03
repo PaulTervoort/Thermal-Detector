@@ -9,9 +9,23 @@ The app is tested on a Ulefone Power Armor 19T.
 If the app is verified to work on other devices then a compatibility list can be added.
 
 ## Build
-- Open the repository as a project in android studio
-- Create a signing key in a new or existing keystore
-- Build the app using the key
+Create a signing key in a new or existing keystore
+
+### Android Studio
+- Open the repository as a project in Android Studio
+- Navigate the main menu to `Build` -> `Generate Signed App Bundle or APK...`
+- Select `APK`
+- Open the previously created keystore and fill in the form
+- Select the Release variant and build the APKs
+
+### Gradle
+- Create a file `keystore.properties` in the project root
+- Define the following properties in the file:
+    - `RELEASE_STORE_FILE=<path to the previously created keystore>`
+    - `RELEASE_STORE_PASSWORD=<password for the keystore>`
+    - `RELEASE_KEY_ALIAS=<name of the key to use>`
+    - `RELEASE_KEY_PASSWORD=<password of the key to use>`
+- Execute `gradle assembleRelease` to build the APKs
 
 ## FLIR SDK
 The FLIR sdk comes as a .zip file, which contains: file `androidsdk-release.aar`, file `thermalsdk-release.aar`, folder `javadoc`.

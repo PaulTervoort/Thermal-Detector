@@ -15,33 +15,42 @@ android {
         resConfigs("en", "nl")
     }
 
-    def keystorePropertiesFile = rootProject.file("keystore.properties")
-    def keystoreConfigured = keystorePropertiesFile.exists()
-    signingConfigs {
-        release {
-            if (keystoreConfigured) {
+    // Use local keystore.properties for signing if it can be loaded
+    def releaseSigningConfig = null
+    try {
+        signingConfigs {
+            release {
                 def keystoreProperties = new Properties()
-                keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                keystoreProperties.load(new FileInputStream(rootProject.file("keystore.properties")))
                 storeFile file(keystoreProperties['RELEASE_STORE_FILE'])
                 storePassword keystoreProperties['RELEASE_STORE_PASSWORD']
                 keyAlias keystoreProperties['RELEASE_KEY_ALIAS']
                 keyPassword keystoreProperties['RELEASE_KEY_PASSWORD']
+                v1SigningEnabled true
+                v2SigningEnabled true
             }
-
-            // Optional, specify signing versions used
-            v1SigningEnabled true
-            v2SigningEnabled true
         }
+        releaseSigningConfig = signingConfigs.release
     }
+    catch (Exception ignored) {}
 
     buildTypes {
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (keystoreConfigured) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig releaseSigningConfig
+        }
+    }
+
+    splits {
+        abi {
+            enable true
+            universalApk false
+            reset()
+
+            // Only ABIs that the FLIR SDK supports
+            include "x86_64", "armeabi-v7a", "arm64-v8a"
         }
     }
 
