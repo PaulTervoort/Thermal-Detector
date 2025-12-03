@@ -43,9 +43,10 @@ android {
         }
     }
 
+    def isBuildingBundle = gradle.startParameter.taskNames.any{ n -> n.toLowerCase().contains("bundle") }
     splits {
         abi {
-            enable true
+            enable !isBuildingBundle
             universalApk false
             reset()
 
