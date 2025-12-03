@@ -1,5 +1,7 @@
 /*
-    This file is part of Thermal Detector.
+    This file is part of Thermal Detector: an Android app for detecting warm objects in dark
+    environments using an integrated FLIR® camera.
+    Copyright (C) 2025  Paul Tervoort
 
     Thermal Detector is free software: you can redistribute it and/or modify it under the terms of
     the GNU General Public License as published by the Free Software Foundation, either version 3 of
