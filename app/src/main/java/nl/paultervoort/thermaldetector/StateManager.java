@@ -28,6 +28,7 @@ import static nl.paultervoort.thermaldetector.StateManager.State.DISCOVERING;
 import static nl.paultervoort.thermaldetector.StateManager.State.IDLE;
 import static nl.paultervoort.thermaldetector.StateManager.State.NEED_CALIBRATE;
 import static nl.paultervoort.thermaldetector.StateManager.State.NO_PERMISSION;
+import static nl.paultervoort.thermaldetector.StateManager.State.NOT_SUPPORTED;
 import static nl.paultervoort.thermaldetector.StateManager.State.STAND_BY;
 import static nl.paultervoort.thermaldetector.StateManager.State.STARTING_STREAM;
 import static nl.paultervoort.thermaldetector.StateManager.State.START_WITH_CALI;
@@ -36,8 +37,6 @@ import static nl.paultervoort.thermaldetector.StateManager.State.STREAMING;
 import android.util.Pair;
 
 import androidx.annotation.NonNull;
-
-import com.flir.thermalsdk.log.ThermalLog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +52,7 @@ class StateManager {
      * FLIR camera states.
      */
     public enum State {
+        NOT_SUPPORTED,      // Cannot initialize the FLIR SDK on the device
         NO_PERMISSION,      // No CAMERA permission, which is needed for the thermal camera
         COMPROMISED,        // The thermal camera is in an invalid state, cannot connect until reboot
         CLOBBERED,          // Another app accessed a camera while this app was connected, reset first now
@@ -116,6 +116,16 @@ class StateManager {
     }
 
     /**
+     * Get a state manager that will always stay in the NOT_SUPPORTED state.
+     * @return A state manager that can only be in state NOT_SUPPORTED
+     */
+    public static StateManager getUnsupportedStateManager() {
+        StateManager stateManager = new StateManager(ignored -> {});
+        stateManager.state = NOT_SUPPORTED;
+        return stateManager;
+    }
+
+    /**
      * Getter.
      * @return The current camera state
      */
@@ -154,7 +164,7 @@ class StateManager {
 
             // Only perform allowed transitions
             if (!STATE_TRANSITIONS[this.state.ordinal()][state.ordinal()]) {
-                ThermalLog.d(TAG, "Illegal state transition: " + this.state + " -> " + state);
+                LogHelper.i(TAG, "Illegal state transition: " + this.state + " -> " + state);
                 return false;
             }
 
@@ -191,7 +201,7 @@ class StateManager {
         }
 
         // Notify callback of state change
-        ThermalLog.d(TAG, state.toString());
+        LogHelper.i(TAG, state.toString());
         onStateChangeHandler.accept(state);
 
         return true;
