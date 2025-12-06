@@ -18,4 +18,5 @@
     <string name="state_clobbered">Verpest</string>
     <string name="enable_camera_text">Zet camera aan of uit</string>
     <string name="state_unknown">Onbekende Staat</string>
+    <string name="device_not_supported">Apparaat niet ondersteund</string>
 </resources>

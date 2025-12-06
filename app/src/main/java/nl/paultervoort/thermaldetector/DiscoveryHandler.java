@@ -25,7 +25,6 @@ import com.flir.thermalsdk.live.Identity;
 import com.flir.thermalsdk.live.discovery.DiscoveredCamera;
 import com.flir.thermalsdk.live.discovery.DiscoveryEventListener;
 import com.flir.thermalsdk.live.discovery.DiscoveryFactory;
-import com.flir.thermalsdk.log.ThermalLog;
 
 /**
  * Handler for thermal camera discovery events.
@@ -50,7 +49,7 @@ class DiscoveryHandler implements DiscoveryEventListener {
         // Extract the discovered camera identity, abort if it is 'null'
         Identity foundIdentity = discoveredCamera.getIdentity();
         if (foundIdentity == null) {
-            ThermalLog.d(TAG, "Found null device");
+            LogHelper.i(TAG, "Found null device");
             return;
         }
 
@@ -58,17 +57,17 @@ class DiscoveryHandler implements DiscoveryEventListener {
         DiscoveryFactory.getInstance().stop(INTEGRATED_LEPTON);
 
         // Give the device that was found to the consumer
-        ThermalLog.d(TAG, "Found device: " + discoveredCamera.getIdentity().deviceId);
+        LogHelper.i(TAG, "Found device: " + discoveredCamera.getIdentity().deviceId);
         feedConsumer(foundIdentity);
     }
 
     @Override
     public void onDiscoveryError(CommunicationInterface
     communicationInterface, ErrorCode error) {
-        ThermalLog.e(TAG, "Error during discovery: " + error);
+        LogHelper.e(TAG, "Error during discovery: " + error);
 
         // Indicate an error by giving 'null' to the consumer
-        ThermalLog.d(TAG, "Restarting discovery");
+        LogHelper.i(TAG, "Restarting discovery");
         feedConsumer(null);
     }
 
@@ -77,7 +76,7 @@ class DiscoveryHandler implements DiscoveryEventListener {
         try {
             callback.accept(identity);
         } catch (Exception e) {
-            ThermalLog.d(TAG, "Consumer threw an exception: " + e);
+            LogHelper.i(TAG, "Consumer threw an exception: " + e);
         }
     }
 }

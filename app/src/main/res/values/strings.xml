@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Thermal Detector</string>
     <string name="title_activity_main" translatable="false">@string/app_name</string>
-    <string name="empty" translatable="false"> </string>
     <string name="camera_feed_text">Camera Feed</string>
     <string name="calibrate_text">Calibrate</string>
     <string name="state_no_permission">No Camera Permission</string>
@@ -19,4 +18,5 @@
     <string name="state_clobbered">Clobbered</string>
     <string name="enable_camera_text">Enable or Disable Camera</string>
     <string name="state_unknown">Unknown State</string>
+    <string name="device_not_supported">Device Not Supported</string>
 </resources>

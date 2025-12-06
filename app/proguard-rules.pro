@@ -1,9 +1,13 @@
 -dontwarn org.jetbrains.annotations.CheckReturnValue
 -dontwarn com.google.gson.annotations.Expose
 
+# Keep class names for logging
+-keepnames class nl.paultervoort.thermaldetector.**
+
 # Do not modify SDK library classes because they interface with native code
 -keepclassmembers,includedescriptorclasses class com.flir.thermalsdk.** { *; }
-# Prevent native thermal SDK library classes used by this project from being removed
+
+# Prevent native thermal SDK library classes used by this project from being excluded
 -keep class com.flir.thermalsdk.ThermalSdk
 -keep class com.flir.thermalsdk.androidsdk.live.connectivity.ConnectorFactoryAndroidHelper
 -keep class com.flir.thermalsdk.androidsdk.live.connectivity.integrated.ConnectorFactoryAndroidIntegratedHelper

@@ -33,9 +33,6 @@ import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.flir.thermalsdk.androidsdk.ThermalSdkAndroid;
-import com.flir.thermalsdk.log.ThermalLog;
-
 /**
  * Thermal detector activity.
  */
@@ -73,14 +70,7 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        // Initialize FLIR
-        ThermalSdkAndroid.init(getApplicationContext(), ThermalLog.LogLevel.DEBUG);
-        this.flirManager = new FLIRManager(this::onFrameUpdated, this::onStatusUpdated, this);
-
-        // Get rotation events without the activity rotating too
-        new RotationHelper(this, this::handleRotation);
-
-        // Get views
+        // Get view objects (before anything else because they may be referenced)
         this.previewImage = findViewById(R.id.cameraView);
         this.minBar = findViewById(R.id.seekBarMin);
         this.maxBar = findViewById(R.id.seekBarMax);
@@ -89,6 +79,12 @@ public class MainActivity extends AppCompatActivity {
         this.statusText = findViewById(R.id.textViewStatus);
         this.buttonCalibrate = findViewById(R.id.buttonCalibrate);
         this.buttonEnableCamera = findViewById(R.id.buttonEnableCamera);
+
+        // Initialize FLIR
+        this.flirManager = new FLIRManager(this::onFrameUpdated, this::onStatusUpdated, this);
+
+        // Get rotation events without the activity rotating too
+        new RotationHelper(this, this::handleRotation);
 
         // Seekbar limits
         this.minBar.setMin(TEMP_MIN_C);
@@ -108,8 +104,8 @@ public class MainActivity extends AppCompatActivity {
         this.minBar.setProgressChangedHandler(this::handleProgressChangedMin);
         this.maxBar.setProgressChangedHandler(this::handleProgressChangedMax);
 
-        // Disable the UI elements until the first FLIR state change
-        updateUI(R.string.empty, 0xFF888888, false, false, CAMERA_ICON_ENABLE);
+        // Initialize the UI elements to the initial state until the first FLIR state change
+        this.onStatusUpdated(this.flirManager.getCameraState());
     }
 
     @Override
@@ -152,6 +148,9 @@ public class MainActivity extends AppCompatActivity {
     public void onStatusUpdated(StateManager.State state) {
         // For each state, define and apply the parameters for the UI
         switch (state) {
+            case NOT_SUPPORTED:
+                updateUI(R.string.device_not_supported, 0xFFFF0000, false, false, CAMERA_ICON_ENABLE);
+                break;
             case NO_PERMISSION:
                 updateUI(R.string.state_no_permission, 0xFFFF0000, false, false, CAMERA_ICON_ENABLE);
                 break;

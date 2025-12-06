@@ -29,6 +29,7 @@ import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.flir.thermalsdk.androidsdk.ThermalSdkAndroid;
 import com.flir.thermalsdk.androidsdk.image.BitmapAndroid;
 import com.flir.thermalsdk.image.ImageBuffer;
 import com.flir.thermalsdk.live.Camera;
@@ -83,9 +84,6 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
     // Handler for checks that must be performed after a time period
     private final Handler delayHandler = new Handler(Looper.getMainLooper());
 
-    // The interface to the FLIR backend
-    private Camera camera = new Camera();
-
     // The current temperature range
     private double minTemp = INITIAL_LOW_TEMP_C;
     private double maxTemp = INITIAL_HIGH_TEMP_C;
@@ -97,6 +95,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
     private final PermissionHelper permissionHelper;
 
     // The objects from different stages in the connection process
+    private Camera camera = null;
     private Identity foundIdentity = null;
     private RemoteControl remoteControl = null;
     private Stream stream = null;
@@ -114,6 +113,23 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         this.onBitmapReady = onBitmapReady;
         this.permissionHelper = new PermissionHelper(activity, CAMERA);
 
+        // Initialize the FLIR thermal SDK
+        try {
+            ThermalSdkAndroid.init(activity.getApplicationContext(), ThermalLog.LogLevel.INFO);
+        }
+        // If the SDK initialization throws any error or exception, very likely the device has no FLIR camera
+        catch (Throwable e) {
+            LogHelper.e(TAG, "Cannot load FLIR SDK. Exception: " + e);
+
+            // Construct dummy state manager to allow the app to still run and inform the user
+            this.stateManager = StateManager.getUnsupportedStateManager();
+            return;
+        }
+        LogHelper.enableThermalLog();
+
+        // Create the interface to the FLIR backend
+        camera = new Camera();
+
         // Build the state manager behaviour in multiple steps
         StateManager.StateManagerBuilder builder = new StateManager.StateManagerBuilder(onStatusChanged);
 
@@ -130,11 +146,11 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         builder.setPostAction(DEVICE_FOUND, FLIRManager.this::connect);
         builder.setPostAction(CONNECTED, FLIRManager.this::startStreaming);
         builder.setPostAction(STAND_BY, () -> this.delayHandler.postDelayed(() -> {
-            ThermalLog.d(TAG, "Disconnect because of long stand by");
+            LogHelper.i(TAG, "Disconnect because of long stand by");
             disconnect();
         }, AUTO_CLOSE_DELAY_MS));
         builder.setPostAction(STREAMING, () -> this.delayHandler.postDelayed(() -> {
-            ThermalLog.d(TAG, "Camera stream not providing frames");
+            LogHelper.i(TAG, "Camera stream not providing frames");
             compromise();
         }, FRAME_TIMEOUT_MS));
 
@@ -148,7 +164,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
                 new StateManager.State[] { STARTING_STREAM, START_WITH_CALI, STREAMING, NEED_CALIBRATE, CALIBRATING });
 
         // Build the state manager
-        stateManager = builder.build();
+        this.stateManager = builder.build();
 
         // Register callback to detect when other apps use the camera, to prevent hard crashes
         CameraManager manager = (CameraManager) activity.getSystemService(CAMERA_SERVICE);
@@ -164,7 +180,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         switch (this.stateManager.getState()) {
             case CLOBBERED:
                 // Try to recover from clobber state
-                ThermalLog.d(TAG, "Recovering from external camera clobber");
+                LogHelper.i(TAG, "Recovering from external camera clobber");
                 this.stateManager.setState(IDLE);
                 // State is now IDLE, so no break yet
             case IDLE:
@@ -193,12 +209,12 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
             case DISCOVERING:
             case DEVICE_FOUND:
                 // Currently in the process of connecting, abort this
-                ThermalLog.d(TAG, "Connect aborted by pause");
+                LogHelper.i(TAG, "Connect aborted by pause");
                 this.stateManager.setState(IDLE);
                 break;
             case CONNECTING:
                 // Do not start streaming after the camera is connected
-                ThermalLog.d(TAG, "Pause after connecting");
+                LogHelper.i(TAG, "Pause after connecting");
                 this.stateManager.setState(CONNECTING_PAUSED);
                 break;
             case CONNECTED:
@@ -208,7 +224,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
             case NEED_CALIBRATE:
             case CALIBRATING:
                 // Camera is connected, so keep it connected but on standby
-                ThermalLog.d(TAG, "Entering stand by");
+                LogHelper.i(TAG, "Entering stand by");
                 this.stateManager.setState(STAND_BY);
                 break;
             default:
@@ -218,23 +234,49 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
     }
 
     /**
-     * Get the most recent thermal camera frame in bitmap format.
-     * @return The most recent camera frame
-     */
-    public @Nullable Bitmap getMostRecentBitmap() {
-        if (mostRecentBitmap == null) {
-            ThermalLog.d(TAG, "Providing 'null' bitmap");
-        }
-
-        return mostRecentBitmap;
-    }
-
-    /**
      * Completely disconnect from the thermal camera asynchronously, releasing all its resources.
      */
     public void disconnect() {
         // In IDLE state there is no connection to the camera
         this.stateManager.setState(IDLE);
+    }
+
+    /**
+     * Request a Flat Field Correction calibration of the thermal camera asynchronously.
+     */
+    public void ffcCalibration() {
+        LogHelper.i(TAG, "User calibration request");
+
+        // force a flat field correction (non-uniformity correction) to happen
+        Calibration calibration;
+        if (this.remoteControl == null || (calibration = this.remoteControl.getCalibration()) == null) {
+            return;
+        }
+
+        // Only trigger calibration requests from the user when camera is treaming
+        if (this.stateManager.isState(STREAMING)) {
+            this.stateManager.runOnStateThread(() -> calibration.nuc().executeSync());
+        }
+    }
+
+    /**
+     * Get the current state of the thermal camera.
+     * @return The current state
+     */
+    public StateManager.State getCameraState() {
+        return this.stateManager.getState();
+    }
+
+    /**
+     * Get the most recent thermal camera frame in bitmap format.
+     * @return The most recent camera frame
+     */
+    public @Nullable Bitmap getMostRecentBitmap() {
+        if (mostRecentBitmap == null) {
+            LogHelper.i(TAG, "Providing 'null' bitmap");
+        }
+
+        return mostRecentBitmap;
     }
 
     /**
@@ -281,24 +323,6 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         this.thermalRangeNeedSetup = true;
     }
 
-    /**
-     * Request a Flat Field Correction calibration of the thermal camera asynchronously.
-     */
-    public void ffcCalibration() {
-        ThermalLog.d(TAG, "User calibration request");
-
-        // force a flat field correction (non-uniformity correction) to happen
-        Calibration calibration;
-        if (this.remoteControl == null || (calibration = this.remoteControl.getCalibration()) == null) {
-            return;
-        }
-
-        // Only trigger calibration requests from the user when camera is treaming
-        if (this.stateManager.isState(STREAMING)) {
-            this.stateManager.runOnStateThread(() -> calibration.nuc().executeSync());
-        }
-    }
-
     //endregion
 
     //region Connection state actions
@@ -313,7 +337,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
             this.stateManager.setState(IDLE);
             this.stateManager.runOnStateThread(this::startDiscovering);
         } else {
-            ThermalLog.e(TAG, "Cannot get camera permission");
+            LogHelper.e(TAG, "Cannot get camera permission");
 
             // If not able to transition to state NO_PERMISSION, try asking again
             if (!this.stateManager.setState(NO_PERMISSION)) {
@@ -365,7 +389,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
             }, FLIRManager.CONNECT_TIMEOUT_MS);
 
             if (!success) {
-                ThermalLog.e(TAG, "Camera backend not working, usually fixed by phone restart");
+                LogHelper.e(TAG, "Camera backend not working, usually fixed by phone restart");
                 this.stateManager.setState(COMPROMISED);
                 return;
             }
@@ -374,7 +398,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         // Get the calibration interface for the connected camera
         Calibration calibration;
         if ((this.remoteControl == null || (calibration = this.remoteControl.getCalibration()) == null)) {
-            ThermalLog.e(TAG, "Connecting to camera went wrong");
+            LogHelper.e(TAG, "Connecting to camera went wrong");
             this.stateManager.setState(DEVICE_FOUND);
             return;
         }
@@ -402,7 +426,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
 
         // Make sure the camera is connected
         if (!this.camera.isConnected()) {
-            ThermalLog.d(TAG, "Streaming expected camera to be connected, but it was not");
+            LogHelper.i(TAG, "Streaming expected camera to be connected, but it was not");
             this.stateManager.setState(DEVICE_FOUND);
             return;
         }
@@ -410,7 +434,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         // Make sure the thermal camera stream is not already in use
         this.stream = this.camera.getStreams().get(0);
         if (this.stream.isStreaming()) {
-            ThermalLog.d(TAG, "Stream was in use before starting it");
+            LogHelper.i(TAG, "Stream was in use before starting it");
             this.stateManager.setState(CONNECTED);
             return;
         }
@@ -424,7 +448,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         // Block state changes while starting the stream
         synchronized (this.stateManager) {
             this.stream.start(arg -> this.stateManager.runOnStateThread(this::processFrame), error -> {
-                ThermalLog.e(TAG, "Error starting stream: " + error);
+                LogHelper.e(TAG, "Error starting stream: " + error);
                 this.stateManager.setState(CONNECTED);
             });
 
@@ -443,10 +467,10 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
             // Verify if the frame should be processed
             StateManager.State state = this.stateManager.getState();
             if (state != STREAMING && state != NEED_CALIBRATE && state != CALIBRATING) {
-                ThermalLog.d(TAG, "Ignoring camera frame because state is: " + state);
+                LogHelper.i(TAG, "Ignoring camera frame because state is: " + state);
                 return;
             } else if (!this.camera.isConnected()) {
-                ThermalLog.d(TAG, "Streaming expected camera to be connected, but it was not");
+                LogHelper.i(TAG, "Streaming expected camera to be connected, but it was not");
                 this.stateManager.setState(DEVICE_FOUND);
                 return;
             }
@@ -511,7 +535,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         }
 
         // An error occurred during discovering
-        ThermalLog.e(TAG, "Camera discovery went wrong");
+        LogHelper.e(TAG, "Camera discovery went wrong");
         try {
             // Try to stop discovering (if not already stopped)
             this.stateManager.setState(IDLE);
@@ -527,7 +551,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
     }
 
     private void onNUCStateChange(Calibration.NucState nucState) {
-        ThermalLog.d(TAG, "NUC State: " + nucState);
+        LogHelper.i(TAG, "NUC State: " + nucState);
 
         // Synchronized to keep the state valid
         synchronized (this.stateManager) {
@@ -536,7 +560,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
 
             // If the state is CONNECTED, this callback is already registered but relevant
             if (state == CONNECTED) {
-                ThermalLog.d(TAG, "Calibration before starting stream");
+                LogHelper.i(TAG, "Calibration before starting stream");
                 return;
             }
 
@@ -554,7 +578,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
                     break;
                 default:
                     // Should never happen, unless the FLIR SDK changes
-                    ThermalLog.d(TAG, "Unexpected NUC state, switch statement incomplete");
+                    LogHelper.e(TAG, "Unexpected NUC state, switch statement incomplete");
                     break;
             }
         }
@@ -567,7 +591,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
 
         // The side-effect of state change is asynchronous, so wait for it to be really disconnected before closing
         while (this.camera.isConnected()) {
-            ThermalLog.d(TAG, "Closing - waiting for camera to disconnect ...");
+            LogHelper.i(TAG, "Closing - waiting for camera to disconnect ...");
         }
         camera.close();
     }
@@ -576,10 +600,10 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
     public void onCameraUnavailable(@NonNull String cameraId) {
         if (stateManager.isState(STARTING_STREAM) || stateManager.isState(START_WITH_CALI)) {
             // If currently starting a stream, it is expected that a camera becomes unavailable
-            ThermalLog.d(TAG, "Intended camera access");
+            LogHelper.i(TAG, "Intended camera access");
         } else {
             // A camera is used externally while also used here, so mark camera clobbered
-            ThermalLog.d(TAG, "External camera access");
+            LogHelper.i(TAG, "External camera access");
             stateManager.setState(CLOBBERED);
         }
 
