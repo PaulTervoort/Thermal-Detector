@@ -11,6 +11,7 @@
 -keep class com.flir.thermalsdk.ThermalSdk
 -keep class com.flir.thermalsdk.androidsdk.live.connectivity.ConnectorFactoryAndroidHelper
 -keep class com.flir.thermalsdk.androidsdk.live.connectivity.integrated.ConnectorFactoryAndroidIntegratedHelper
+-keep class com.flir.thermalsdk.androidsdk.live.connectivity.integrated.LeptonServiceV1Polyfill
 -keep class com.flir.thermalsdk.androidsdk.live.discovery.ScannerFactoryAndroidHelper
 -keep class com.flir.thermalsdk.androidsdk.live.importing.ImporterFactoryAndroidHelper
 -keep class com.flir.thermalsdk.image.AdeSettings

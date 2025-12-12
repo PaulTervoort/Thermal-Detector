@@ -73,10 +73,11 @@ class StateManager {
     // Human readable definition of all legal state transitions
     private final static int STATE_COUNT = State.values().length;
     private final static boolean[][] STATE_TRANSITIONS = generateTransitions(new StatePreReq[]{
+            invertedPreReq( NOT_SUPPORTED,      new State[] { }),
             new StatePreReq(NO_PERMISSION,      new State[] { IDLE }),
             new StatePreReq(COMPROMISED,        new State[] { CONNECTING, CONNECTING_PAUSED, STREAMING }),
-            new StatePreReq(CLOBBERED,          State.values()), // Reachable from all states
-            new StatePreReq(IDLE,               State.values()), // Reachable from all states
+            invertedPreReq( CLOBBERED,          new State[] { NOT_SUPPORTED }),
+            invertedPreReq( IDLE,               new State[] { NOT_SUPPORTED }),
             new StatePreReq(DISCOVERING,        new State[] { IDLE }),
             new StatePreReq(DEVICE_FOUND,       new State[] { DISCOVERING, CONNECTING, CONNECTING_PAUSED,
                                                     CONNECTED, STARTING_STREAM, START_WITH_CALI, STREAMING,
@@ -270,13 +271,34 @@ class StateManager {
         final boolean[][] transitions = new boolean[STATE_COUNT][STATE_COUNT]; // Start with all false
         for (StatePreReq transition : statePrerequisites) {
             for (State from : transition.sources) {
-                transitions[from.ordinal()][transition.dest.ordinal()] = true;
+                if (from != null) {
+                    transitions[from.ordinal()][transition.dest.ordinal()] = true;
+                }
             }
         }
         return transitions;
     }
 
-    private static class StatePreReq {
+    public static StatePreReq invertedPreReq(State dest, State[] disallow) {
+        State[] allow = State.values();
+        int todo = disallow.length;
+        for (int i = 0; i < allow.length; i++) {
+            State s = allow[i];
+            for (State d : disallow) {
+                if (s == d) {
+                    allow[i] = null;
+                    todo -= 1;
+                    break;
+                }
+            }
+            if (todo <= 0) {
+                break;
+            }
+        }
+        return new StatePreReq(dest, allow);
+    }
+
+    static class StatePreReq {
         public final State dest;
         public final State[] sources;
 

@@ -57,6 +57,7 @@ import static nl.paultervoort.thermaldetector.StateManager.State.DEVICE_FOUND;
 import static nl.paultervoort.thermaldetector.StateManager.State.DISCOVERING;
 import static nl.paultervoort.thermaldetector.StateManager.State.IDLE;
 import static nl.paultervoort.thermaldetector.StateManager.State.NEED_CALIBRATE;
+import static nl.paultervoort.thermaldetector.StateManager.State.NOT_SUPPORTED;
 import static nl.paultervoort.thermaldetector.StateManager.State.NO_PERMISSION;
 import static nl.paultervoort.thermaldetector.StateManager.State.STARTING_STREAM;
 import static nl.paultervoort.thermaldetector.StateManager.State.START_WITH_CALI;
@@ -70,6 +71,9 @@ import static nl.paultervoort.thermaldetector.StateManager.State.COMPROMISED;
 class FLIRManager extends CameraManager.AvailabilityCallback implements AutoCloseable {
     // Logging tag
     private final static String TAG = FLIRManager.class.getSimpleName();
+
+    // Relevant error code for discovery
+    private final static int ERROR_CODE_INTERFACE_NOT_SUPPORTED = 1;
 
     // Colorizer settings
     private final static double INITIAL_LOW_TEMP_C = 10.0; // Celsius
@@ -360,7 +364,7 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
 
         // Start trying to discover an integrated Lepton camera
         DiscoveryFactory.getInstance().scan(
-                new DiscoveryHandler(this::onIdentityDiscover),
+                new DiscoveryHandler(this::onIdentityDiscover, this::onDiscoverError),
                 INTEGRATED_LEPTON
         );
     }
@@ -547,6 +551,13 @@ class FLIRManager extends CameraManager.AvailabilityCallback implements AutoClos
         finally {
             // Make sure to restart discovering
             startDiscovering();
+        }
+    }
+
+    private void onDiscoverError(int errorCode) {
+        // If the integrated camera interface is not supported, the device is not supported
+        if (errorCode == ERROR_CODE_INTERFACE_NOT_SUPPORTED) {
+            this.stateManager.setState(NOT_SUPPORTED);
         }
     }
 

@@ -35,13 +35,16 @@ class DiscoveryHandler implements DiscoveryEventListener {
     private final static String TAG = DiscoveryHandler.class.getSimpleName();
 
     private final Consumer<Identity> callback;
+    private final Consumer<Integer> error_handler;
 
     /**
      * Constructor.
      * @param callback A function to call when a camera identity is found (null on error)
+     * @param error_handler A function to call after a discovery error. The FLIR error code is provided
      */
-    public DiscoveryHandler(Consumer<Identity> callback) {
+    public DiscoveryHandler(Consumer<Identity> callback, Consumer<Integer> error_handler) {
         this.callback = callback;
+        this.error_handler = error_handler;
     }
 
     @Override
@@ -65,6 +68,11 @@ class DiscoveryHandler implements DiscoveryEventListener {
     public void onDiscoveryError(CommunicationInterface
     communicationInterface, ErrorCode error) {
         LogHelper.e(TAG, "Error during discovery: " + error);
+
+        // Provide error code to handler
+        if (error.isError()) {
+            this.error_handler.accept(error.getCode());
+        }
 
         // Indicate an error by giving 'null' to the consumer
         LogHelper.i(TAG, "Restarting discovery");
